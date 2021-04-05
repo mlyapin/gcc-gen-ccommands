@@ -39,10 +39,10 @@ TEST_GROUP(test_saver)
 TEST(test_saver, simple)
 {
         struct saver jsaver;
-        CHECK(saver_init(&jsaver, ourtempfile.c_str(), "/somedir", "somefile", SFLAGS_NONE));
+        CHECK(saver_init(&jsaver, "/somedir", "somefile", SFLAGS_NONE));
 
-        CHECK(saver_save(&jsaver));
-        CHECK(saver_deinit(&jsaver));
+        CHECK(saver_save(&jsaver, ourtempfile.c_str()));
+        saver_deinit(&jsaver);
 
         char const *expected_json =
                 "{\"file\": \"somefile\", \"directory\": \"/somedir\", \"arguments\": []}";
@@ -52,7 +52,7 @@ TEST(test_saver, simple)
 TEST(test_saver, style_arguments)
 {
         struct saver jsaver;
-        CHECK(saver_init(&jsaver, ourtempfile.c_str(), "/somedir", "somefile", SFLAGS_NONE));
+        CHECK(saver_init(&jsaver, "/somedir", "somefile", SFLAGS_NONE));
 
         struct arg arg0;
         arg0.type = arg::ARG_NORMAL;
@@ -70,8 +70,8 @@ TEST(test_saver, style_arguments)
 
         CHECK(saver_append(&jsaver, &arg1));
 
-        CHECK(saver_save(&jsaver));
-        CHECK(saver_deinit(&jsaver));
+        CHECK(saver_save(&jsaver, ourtempfile.c_str()));
+        saver_deinit(&jsaver);
 
         char const *expected_json =
                 "{\"file\": \"somefile\", \"directory\": \"/somedir\","
@@ -82,7 +82,7 @@ TEST(test_saver, style_arguments)
 TEST(test_saver, style_command)
 {
         struct saver jsaver;
-        CHECK(saver_init(&jsaver, ourtempfile.c_str(), "/somedir", "somefile", SFLAGS_STYLE_COMMAND));
+        CHECK(saver_init(&jsaver, "/somedir", "somefile", SFLAGS_STYLE_COMMAND));
 
         struct arg arg0;
         arg0.type = arg::ARG_NORMAL;
@@ -100,11 +100,10 @@ TEST(test_saver, style_command)
 
         CHECK(saver_append(&jsaver, &arg1));
 
-        CHECK(saver_save(&jsaver));
-        CHECK(saver_deinit(&jsaver));
+        CHECK(saver_save(&jsaver, ourtempfile.c_str()));
+        saver_deinit(&jsaver);
 
-        char const *expected_json =
-                "{\"file\": \"somefile\", \"directory\": \"/somedir\","
-                " \"command\": \"-test somearg -another one \"}";
+        char const *expected_json = "{\"file\": \"somefile\", \"directory\": \"/somedir\","
+                                    " \"command\": \"-test somearg -another one \"}";
         STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
 }

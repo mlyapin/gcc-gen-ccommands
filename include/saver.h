@@ -14,8 +14,7 @@ extern "C" {
 
 enum saver_flags {
         SFLAGS_NONE = 0,
-        SFLAGS_OVERWRITE = 0x1 << 0,     /**< Overwrite the json file. */
-        SFLAGS_STYLE_COMMAND = 0x1 << 1, /**< Generate json with "command" field. */
+        SFLAGS_STYLE_COMMAND = 0x1 << 0, /**< Generate json with "command" field. */
 };
 
 struct saver {
@@ -23,7 +22,6 @@ struct saver {
         char const *src_file;
         enum saver_flags flags;
 
-        FILE *outf;
         json_t *out_obj;
         json_error_t out_err;
 
@@ -32,23 +30,18 @@ struct saver {
         char *cmds;
         size_t cmds_len;
         size_t cmds_size;
-
-#ifndef NDEBUG
-        /* We aren't supposed to save the result more than once. */
-        bool saved;
-#endif
 };
 
-bool saver_init(struct saver *saver, char const *json_path, char const *working_dir,
-                char const *src_file, enum saver_flags flags);
-bool saver_deinit(struct saver *);
+bool saver_init(struct saver *saver, char const *working_dir, char const *src_file,
+                enum saver_flags flags);
+void saver_deinit(struct saver *);
 
 /**
  * @brief Append single option with arguments.
  */
 bool saver_append(struct saver *, struct arg const *arg);
 
-bool saver_save(struct saver *);
+bool saver_save(struct saver *, char const *out_path);
 
 /**
  * @brief Get a pointer to the last occurred error.

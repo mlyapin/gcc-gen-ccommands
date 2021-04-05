@@ -33,7 +33,7 @@ static void dowork(void)
                                      .data = const_cast<char *>("gcc") });
 
         struct saver saver;
-        if (!saver_init(&saver, "build/out.json", "./", "todo", SFLAGS_NONE)) {
+        if (!saver_init(&saver, "./", "todo", SFLAGS_NONE)) {
                 exit(EXIT_FAILURE);
         }
 
@@ -48,13 +48,11 @@ static void dowork(void)
                 }
         }
 
-        if (!saver_save(&saver)) {
+        if (!saver_save(&saver, "build/out.json")) {
                 exit(EXIT_FAILURE);
         }
 
-        if (!saver_deinit(&saver)) {
-                exit(EXIT_FAILURE);
-        }
+        saver_deinit(&saver);
 
         changer_chain_deinit(&cchain);
 }

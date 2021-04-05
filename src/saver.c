@@ -10,91 +10,10 @@
 #define SAVER_CMDS_INIT_SIZE       (128u)
 #define SAVER_CMDS_GROW_MULTIPLIER (2u)
 
-static bool set_pos_at_rootarray(FILE *f)
+bool saver_init(struct saver *saver, char const *working_dir, char const *src_file,
+                enum saver_flags flags)
 {
-        rewind(f);
-
-        int ch = EOF;
-        while ((ch = fgetc(f)) != EOF || (!feof(f))) {
-                if (!isspace(ch)) {
-                        break;
-                }
-        }
-
-        if (ch != '[') {
-                /* There is no '[' character? */
-                return (false);
-        }
-
-        return (true);
-}
-
-static FILE *prepare_new(char const *json_path)
-{
-        FILE *f = fopen(json_path, "w+");
-        if (NULL == f) {
-                goto err;
-        }
-
-        assert(0 == ftell(f));
-        if (EOF == fputs("[]", f)) {
-                return (false);
-        }
-
-        if (!set_pos_at_rootarray(f)) {
-                goto err_fclose;
-        }
-
-        return (f);
-
-err_fclose:
-        fclose(f);
-err:
-        return (NULL);
-}
-
-static FILE *prepare_existing(char const *json_path)
-{
-        FILE *f = fopen(json_path, "r+");
-        if (NULL == f) {
-                goto err;
-        }
-
-        long pos = ftell(f);
-        if (pos < 0) {
-                goto err_fclose;
-        } else if (pos == 0) {
-                /* The file exists, but it's empty. */
-                fclose(f);
-                return (prepare_new(json_path));
-        }
-
-        if (!set_pos_at_rootarray(f)) {
-                goto err_fclose;
-        }
-
-        return (f);
-
-err_fclose:
-        fclose(f);
-err:
-        return (NULL);
-}
-
-bool saver_init(struct saver *saver, char const *json_path, char const *working_dir,
-                char const *src_file, enum saver_flags flags)
-{
-        bool overwrite = flags & SFLAGS_OVERWRITE;
-        if (access(json_path, F_OK) == 0 && !overwrite) {
-                saver->outf = prepare_existing(json_path);
-        } else {
-                saver->outf = prepare_new(json_path);
-        }
-
         saver->flags = flags;
-#ifndef NDEBUG
-        saver->saved = false;
-#endif
 
         /* Must be either user-specified, or the plugin must determine it itself. */
         assert(NULL != working_dir);
@@ -106,7 +25,7 @@ bool saver_init(struct saver *saver, char const *json_path, char const *working_
 
         saver->out_obj = json_object();
         if (NULL == saver->out_obj) {
-                goto err_fclose;
+                goto err;
         }
 
         json_t *jworkdir = json_string(saver->working_dir);
@@ -169,13 +88,11 @@ err_free_jworkdir:
         json_decref(jworkdir);
 err_freeobj:
         json_decref(saver->out_obj);
-err_fclose:
-        fclose(saver->outf);
 err:
         return (false);
 }
 
-bool saver_deinit(struct saver *saver)
+void saver_deinit(struct saver *saver)
 {
         json_decref(saver->out_obj);
 
@@ -191,8 +108,6 @@ bool saver_deinit(struct saver *saver)
 
                 json_decref(saver->argarr);
         }
-
-        return (0 == fclose(saver->outf));
 }
 
 static bool jsonarr_append_str(json_t *arr, char const *str)
@@ -292,12 +207,8 @@ bool saver_append(struct saver *saver, struct arg const *arg)
         }
 }
 
-bool saver_save(struct saver *saver)
+bool saver_save(struct saver *saver, char const *out_path)
 {
-#ifndef NDEBUG
-        assert(!saver->saved);
-        saver->saved = true;
-#endif
         if (saver->flags & SFLAGS_STYLE_COMMAND) {
                 json_t *jstr = json_string(saver->cmds);
                 if (NULL == jstr) {
@@ -306,7 +217,21 @@ bool saver_save(struct saver *saver)
 
                 json_object_set_new(saver->out_obj, "command", jstr);
         }
-        return (0 == json_dumpf(saver->out_obj, saver->outf, 0));
+
+        /* Always create the file anew. */
+        FILE *f = fopen(out_path, "w+");
+        if (NULL == f) {
+                return (false);
+        }
+
+        bool successful = true;
+
+        if (0 != json_dumpf(saver->out_obj, f, 0)) {
+                successful = false;
+        }
+        fclose(f);
+
+        return (successful);
 }
 
 char const *saver_get_last_err(struct saver *saver)
