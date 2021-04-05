@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "LLDB::Tests",
+            "type": "lldb-vscode",
+            "request": "launch",
+            "program": "build/tests",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": true,
+        }
+    ]
+}
