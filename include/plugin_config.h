@@ -14,15 +14,21 @@ struct plugin_name_args;
 #define CONFIG_LAST_NDX  (CONFIG_OUTPUT)
 #define CONFIG_COUNT     (CONFIG_LAST_NDX - CONFIG_FIRST_NDX + 1)
 
+/**
+ * Available configuration options.
+ * */
 enum config_opts {
-        CONFIG_UNKNOWN_KEY,
-        CONFIG_IGNORE_VERS,
-        CONFIG_FILTER_SPECIFIC,
-        CONFIG_FILTER_INTERNAL,
-        CONFIG_COMP_REPLACE,
-        CONFIG_OUTPUT,
+        CONFIG_UNKNOWN_KEY,     /**< Used as an invalid option. */
+        CONFIG_IGNORE_VERS,     /**< Do not check GCC and Janson versions at the start. */
+        CONFIG_FILTER_SPECIFIC, /**< Filter out flags specific to GCC. */
+        CONFIG_FILTER_INTERNAL, /**< Filter out internal GCC flags. */
+        CONFIG_COMP_REPLACE,    /**< Replace a compiler name with a specified one. */
+        CONFIG_OUTPUT,          /**< Specify a location of an output file. */
 };
 
+/**
+ * One union to represent all possible values of options.
+ * */
 union config_values {
         bool ignore_versions;
         bool filter_specific;
@@ -43,22 +49,41 @@ union config_values {
         } output;
 };
 
+/**
+ * Describes an actual option.
+ * */
 struct config_opt {
-        char const *key;
-        char const *help;
+        char const *key;  /**< It's the part after -fplugin-gen_ccommands-. */
+        char const *help; /**< Help message. */
 
-        bool set;
-        union config_values defval;
-        union config_values setval;
+        bool set;                   /**< Is it set, or shall we use a default value? */
+        union config_values defval; /**< Default value. */
+        union config_values setval; /**< Manually set value. */
 };
 
+/**
+ * @brief Parses given key and value, and applies changes to options.
+ * */
 enum config_opts config_apply_arg(char const *key, char const *val);
 
+/**
+ * @brief Get a value of an option.
+ *
+ * If the value was changed with `config_apply_arg`, the custom value will be returned,
+ * otherwise you are going to get a default one.
+ * */
 union config_values config_get(enum config_opts opt);
 
-/* TODO Implement config_get_help. */
+/**
+ * @brief Get a formatted help string.
+ * @warning A returned pointer must be freed.
+ * */
 char const *config_get_help_str(void);
 
+/**
+ * @brief Resets all options to their default values.
+ * @note It's for unit tests actually.
+ * */
 void config_reset_opts(void);
 
 #ifdef __cplusplus

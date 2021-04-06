@@ -37,6 +37,10 @@ struct changer_chain {
         size_t changers_cap;
 };
 
+/**
+ * @brief Initialize a changer chain.
+ * @warning The chain must be deinitialized with changer_chain_deinit() to avoid memory leaks.
+ * */
 void changer_chain_init(struct changer_chain *cc);
 
 void changer_chain_deinit(struct changer_chain *cc);
@@ -48,14 +52,26 @@ bool changer_chain_add(struct changer_chain *cc, struct changer changer);
 
 /**
  * @brief Feed an argument to the changer chain.
- *
- * Arguments are the same as for @changer_fnt.
+ * @param[in,out] arg The argument to change.
  *  */
 bool changer_chain_handle(struct changer_chain *cc, struct arg *arg);
 
+/**
+ * @brief Replaces compiler name with a passed string.
+ * @param[in,out] arg The argument to change.
+ * */
 bool changer_replace_compiler_with_static(struct arg *arg, struct changer *c);
 
+/**
+ * @brief Drops all internal GCC flags e.g., -auxbase.
+ * @param[in,out] arg The argument to change.
+ * */
 bool changer_drop_internal(struct arg *arg, struct changer *c);
+
+/**
+ * @brief Drops GCC specific flags e.g., -fplugin.
+ * @param[in,out] arg The argument to change.
+ * */
 bool changer_drop_gccspecific(struct arg *arg, struct changer *c);
 
 #ifdef __cplusplus

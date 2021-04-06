@@ -3,15 +3,17 @@
 
 #include <stddef.h>
 
+/** The number of possible options to an argument. */
 #define ARG_MAX_NUMBER_OF_OPTS (3)
 
 struct cl_decoded_option;
 
+/** Describes a single argument. */
 struct arg {
         enum arg_type {
-                ARG_NORMAL,
-                ARG_COMPILER_NAME,
-                ARG_INPUT_NAME,
+                ARG_NORMAL, /**< Usual argument e.g., "-I/somedir/somefile" */
+                ARG_COMPILER_NAME, /**< Compiler name. Same as argv[0]. */
+                ARG_INPUT_NAME, /**< Input file. You usual source file e.g., src/saver.c */
         } type;
         union {
                 struct {
@@ -30,6 +32,9 @@ struct arg {
         };
 };
 
+/**
+ * @brief Converts a decoded GCC option to our own.
+ * */
 struct arg convert_to_arg(struct cl_decoded_option option);
 
 #endif /* __ARG_H_ */
