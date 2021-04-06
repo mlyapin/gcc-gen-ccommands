@@ -13,24 +13,29 @@
 #include "changers.h"
 #include "cppdefs.h"
 #include "paths.h"
+#include "plugin_config.h"
 #include "saver.h"
 
 int plugin_is_GPL_compatible;
-
-#define DEFAULT_IGNORE_VERSIONS     (false)
-#define DEFAULT_FILTER_GCC_SPECIFIC (true)
-#define DEFAULT_FILTER_GCC_INTERNAL (true)
-#define DEFAULT_WORKING_DIR         (NULL)
 
 static void dowork(void)
 {
         struct changer_chain cchain;
         changer_chain_init(&cchain);
 
-        changer_chain_add(&cchain, { .fn = changer_drop_internal, .data = NULL });
-        changer_chain_add(&cchain, { .fn = changer_drop_gccspecific, .data = NULL });
-        changer_chain_add(&cchain, { .fn = changer_replace_compiler_with_static,
-                                     .data = const_cast<char *>("gcc") });
+        if (config_get(CONFIG_FILTER_INTERNAL).filter_internal) {
+                changer_chain_add(&cchain, { .fn = changer_drop_internal, .data = NULL });
+        }
+        if (config_get(CONFIG_FILTER_SPECIFIC).filter_specific) {
+                changer_chain_add(&cchain, { .fn = changer_drop_gccspecific, .data = NULL });
+        }
+        auto conf_compr = config_get(CONFIG_COMP_REPLACE).comp_replace;
+        if (conf_compr.type == config_values::config_compreplace::CONF_COMPREPLACE_TYPE_SPECIFIED) {
+                changer_chain_add(&cchain, {
+                                                   .fn = changer_replace_compiler_with_static,
+                                                   .data = const_cast<char *>(conf_compr.specified),
+                                           });
+        }
 
         struct saver saver;
         if (!saver_init(&saver, "./", "todo", SFLAGS_NONE)) {
@@ -58,35 +63,21 @@ static void dowork(void)
 }
 
 #define PLUGIN_ARG(KEY) "-fplugin-arg-gen-ccommands-" KEY
-struct config {
-        bool ignore_versions;
-        char const *working_dir; /**< Value of the "directory" field.
-                                  * If NULL, use the location of output file. */
-};
-
-static struct config gather_config(struct plugin_name_args *args)
-{
-        struct config c = {
-                .ignore_versions = DEFAULT_IGNORE_VERSIONS,
-        };
-
-        for (size_t i = 0; i < args->argc; i++) {
-                struct plugin_argument arg = args->argv[i];
-#define arg_is(KEY) (strncmp(arg.key, (KEY), strlen(KEY)) == 0)
-
-                if (arg_is("ignore_vers")) {
-                        c.ignore_versions = true;
-                }
-        }
-
-        return (c);
-}
 
 int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *version)
 {
-        struct config conf = gather_config(info);
+        for (size_t i = 0; i < info->argc; i++) {
+                struct plugin_argument *argv = &info->argv[i];
 
-        if (!conf.ignore_versions && !plugin_default_version_check(version, &gcc_version)) {
+                enum config_opts o = config_apply_arg(argv->key, argv->value);
+                if (CONFIG_UNKNOWN_KEY == o) {
+                        /* TODO Print warning about an unknown key. */
+                        return (EXIT_FAILURE);
+                }
+        }
+
+        bool ignore_vers = config_get(CONFIG_IGNORE_VERS).ignore_versions;
+        if (!ignore_vers && !plugin_default_version_check(version, &gcc_version)) {
                 fprintf(stderr,
                         "Incompatible GCC version.\n"
                         "The gen-ccommands plugin was compiled for GCC %s.\n"
@@ -96,9 +87,8 @@ int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *versio
                 return (EXIT_FAILURE);
         }
 
-        if (!conf.ignore_versions &&
-            jansson_version_cmp(JANSSON_MAJOR_VERSION, JANSSON_MINOR_VERSION,
-                                JANSSON_MICRO_VERSION) != 0) {
+        if (!ignore_vers && jansson_version_cmp(JANSSON_MAJOR_VERSION, JANSSON_MINOR_VERSION,
+                                                JANSSON_MICRO_VERSION) != 0) {
                 fprintf(stderr,
                         "Incompatible Jansson version.\n"
                         "The gen-ccommands plugin was compiled for Jansson %s, but runtime version is %s.\n"
