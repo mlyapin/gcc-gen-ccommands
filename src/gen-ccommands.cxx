@@ -54,27 +54,64 @@ static char const *get_directory(void)
         return (get_src_pwd());
 }
 
-static void dowork(void)
+static bool construct_chain(struct changer_chain *cc)
 {
-        struct changer_chain cchain;
-        changer_chain_init(&cchain);
+        changer_chain_init(cc);
 
         if (config_get(CONFIG_FILTER_INTERNAL).filter_internal) {
-                changer_chain_add(&cchain, { .fn = changer_drop_internal, .data = NULL });
+                struct changer c = { .fn = changer_drop_internal, .data = NULL };
+
+                if (!changer_chain_add(cc, c)) {
+                        goto err_deinit;
+                }
         }
         if (config_get(CONFIG_FILTER_SPECIFIC).filter_specific) {
-                changer_chain_add(&cchain, { .fn = changer_drop_gccspecific, .data = NULL });
+                struct changer c = { .fn = changer_drop_gccspecific, .data = NULL };
+
+                if (!changer_chain_add(cc, c)) {
+                        goto err_deinit;
+                }
         }
 
-        auto conf_compr = config_get(CONFIG_COMP_REPLACE).comp_replace;
-        if (conf_compr.type == config_values::config_compreplace::CONF_COMPREPLACE_TYPE_SPECIFIED) {
-                changer_chain_add(&cchain, { .fn = changer_replace_compiler_with_static,
-                                             .data = const_cast<char *>(conf_compr.specified) });
+        {
+                auto comp_replacement = config_get(CONFIG_COMP_REPLACE).comp_replace;
+                if (comp_replacement.type ==
+                    config_values::config_compreplace::CONF_COMPREPLACE_TYPE_SPECIFIED) {
+                        struct changer c = {
+                                .fn = changer_replace_compiler_with_static,
+                                .data = const_cast<char *>(comp_replacement.specified),
+                        };
+
+                        if (!changer_chain_add(cc, c)) {
+                                goto err_deinit;
+                        }
+                }
         }
 
+        return (true);
+
+err_deinit:
+        changer_chain_deinit(cc);
+err:
+        return (false);
+}
+
+static void deconstruct_chain(struct changer_chain *cc)
+{
+        changer_chain_deinit(cc);
+}
+
+static bool dowork(void)
+{
+        struct changer_chain cchain;
         struct saver saver;
+
+        if (!construct_chain(&cchain)) {
+                goto err;
+        }
+
         if (!saver_init(&saver, get_directory(), get_input_filename(), SFLAGS_NONE)) {
-                exit(EXIT_FAILURE);
+                goto err_dchain;
         }
 
         for (size_t i = 0; i < save_decoded_options_count; i++) {
@@ -84,17 +121,25 @@ static void dowork(void)
                 }
 
                 if (!saver_append(&saver, &a)) {
-                        exit(EXIT_FAILURE);
+                        goto err_dsaver;
                 }
         }
 
         if (!saver_save(&saver, get_output_filename())) {
-                exit(EXIT_FAILURE);
+                goto err_dsaver;
         }
 
         saver_deinit(&saver);
+        deconstruct_chain(&cchain);
 
-        changer_chain_deinit(&cchain);
+        return (true);
+
+err_dsaver:
+        saver_deinit(&saver);
+err_dchain:
+        deconstruct_chain(&cchain);
+err:
+        return (false);
 }
 
 #define PLUGIN_ARG(KEY) "-fplugin-arg-gen-ccommands-" KEY
@@ -133,7 +178,9 @@ int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *versio
                 return (EXIT_FAILURE);
         }
 
-        dowork();
+        if (!dowork()) {
+                return (EXIT_FAILURE);
+        }
 
         return (EXIT_SUCCESS);
 }
