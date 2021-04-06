@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #include "arg.h"
 #include "changers.h"
@@ -17,6 +19,40 @@
 #include "saver.h"
 
 int plugin_is_GPL_compatible;
+
+static char const *get_input_filename(void)
+{
+        assert(num_in_fnames >= 1);
+        char const *input_filename = in_fnames[0];
+        return (input_filename);
+}
+
+static char const *get_output_filename(void)
+{
+        struct config_values::config_output out = config_get(CONFIG_OUTPUT).output;
+        if (out.type == config_values::config_output::CONF_OUT_TYPE_SPECIFIED) {
+                return (out.specified);
+        } else if (out.type == config_values::config_output::CONF_OUT_TYPE_NEARINPUT) {
+                char const *suffix = ".json";
+                char const *ifname = get_input_filename();
+
+                size_t const input_len = strlen(ifname);
+                size_t const result_len = strlen(suffix) + input_len + 1;
+                char *result = static_cast<char *>(xcalloc(result_len, sizeof(*result)));
+
+                strcpy(result, ifname);
+                strcat(result, suffix);
+
+                return (result);
+        } else {
+                assert(false);
+        }
+}
+
+static char const *get_directory(void)
+{
+        return (get_src_pwd());
+}
 
 static void dowork(void)
 {
@@ -29,16 +65,15 @@ static void dowork(void)
         if (config_get(CONFIG_FILTER_SPECIFIC).filter_specific) {
                 changer_chain_add(&cchain, { .fn = changer_drop_gccspecific, .data = NULL });
         }
+
         auto conf_compr = config_get(CONFIG_COMP_REPLACE).comp_replace;
         if (conf_compr.type == config_values::config_compreplace::CONF_COMPREPLACE_TYPE_SPECIFIED) {
-                changer_chain_add(&cchain, {
-                                                   .fn = changer_replace_compiler_with_static,
-                                                   .data = const_cast<char *>(conf_compr.specified),
-                                           });
+                changer_chain_add(&cchain, { .fn = changer_replace_compiler_with_static,
+                                             .data = const_cast<char *>(conf_compr.specified) });
         }
 
         struct saver saver;
-        if (!saver_init(&saver, "./", "todo", SFLAGS_NONE)) {
+        if (!saver_init(&saver, get_directory(), get_input_filename(), SFLAGS_NONE)) {
                 exit(EXIT_FAILURE);
         }
 
@@ -53,7 +88,7 @@ static void dowork(void)
                 }
         }
 
-        if (!saver_save(&saver, "build/out.json")) {
+        if (!saver_save(&saver, get_output_filename())) {
                 exit(EXIT_FAILURE);
         }
 
