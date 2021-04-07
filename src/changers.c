@@ -106,7 +106,7 @@ static char const *GCC_INTERNAL_OPTS[] = {
         "-quiet",
 };
 static char const *GCC_SPECIFIC_OPTS[] = {
-        "-iplugindir",
+        "-iplugindir*",
         "-fplugin*",
 };
 

@@ -119,7 +119,7 @@ TEST(test_changers, filterout_gccspecific)
 {
         struct arg a;
         a.type = arg::ARG_NORMAL;
-        a.normal.arg = "-iplugindir";
+        a.normal.arg = "-iplugindir=/some/directory";
 
         CHECK_FALSE(changer_drop_gccspecific(&a, nullptr));
 }
