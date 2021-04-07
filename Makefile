@@ -117,3 +117,24 @@ $(BUILDDIR_TESTS)/%.o: %.c
 $(BUILDDIR_TESTS)/%.o: %.cxx
 	@$(MKDIRP) $(dir $@)
 	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(TESTS_CPPFLAGS) $(TESTS_CXXFLAGS) $< -o $@
+
+# Dependency files
+
+$(BUILDDIR_TESTS)/%.d: %.c
+	@$(MKDIRP) $(dir $@)
+	@$(CC) $(CPPFLAGS) $(TESTS_CPPFLAGS) -M -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_TESTS)/%.d: %.cxx
+	@$(MKDIRP) $(dir $@)
+	@$(CXX) $(CPPFLAGS) $(TESTS_CPPFLAGS) -M -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_PLUGIN)/%.d: %.c
+	@$(MKDIRP) $(dir $@)
+	@$(CC) $(CPPFLAGS) $(PLUGIN_CPPFLAGS) -M -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_PLUGIN)/%.d: %.cxx
+	@$(MKDIRP) $(dir $@)
+	@$(CXX) $(CPPFLAGS) $(PLUGIN_CPPFLAGS) -M -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+include $(PLUGIN_OBJS:.o=.d)
+include $(TESTS_OBJS:.o=.d)
