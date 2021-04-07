@@ -139,7 +139,7 @@ err:
         return (false);
 }
 
-#define PLUGIN_ARG(KEY) "-fplugin-arg-gen-ccommands-" KEY
+#define PLUGIN_ARG(KEY) "-fplugin-arg-gen_ccommands-" KEY
 
 static struct plugin_info helpver_info = {.version = "0.0.1", .help = "Huh?"};
 

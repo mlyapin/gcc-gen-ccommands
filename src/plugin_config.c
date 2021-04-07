@@ -40,8 +40,8 @@ static struct config_opt OPTS[] = {
                                          },
               [CONFIG_COMP_REPLACE]    = {
                                            .key = "replace_comp",
-                                           .help = "Replace compiler entry with specified. May be <NONE>,"
-                                           "which will leave compiler's name unchanged.",
+                                           .help = "Replace compiler with a specified string. "
+                                           "May be <NONE>, which will leave compiler's name as is.",
                                            .help_defval = "<NONE>",
                                            .set = false,
                                            .defval.comp_replace.type = CONF_COMPREPLACE_TYPE_NONE,
