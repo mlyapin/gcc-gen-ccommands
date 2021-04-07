@@ -89,7 +89,6 @@ char *construct_path(char const *restrict absdir, char const *restrict relpath)
         size_t space_remains = FILENAME_MAX + 1 - cwd_len;
 
         strncat(buffer, relpath, space_remains);
-        size_t overall_len = strnlen(buffer, FILENAME_MAX + 1);
 
         char *cursor = buffer;
 
