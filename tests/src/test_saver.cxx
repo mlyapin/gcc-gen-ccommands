@@ -107,3 +107,54 @@ TEST(test_saver, style_command)
                                     " \"command\": \"-test somearg -another one \"}]";
         STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
 }
+
+TEST(test_saver, overwrites_old)
+{
+        struct saver jsaver;
+
+        /* Write the json the first time. */
+        CHECK(saver_init(&jsaver, "/wrongdir", "wrongfile", SFLAGS_NONE));
+
+        struct arg arg0;
+        arg0.type = arg::ARG_NORMAL;
+        arg0.normal.arg = "-test";
+        arg0.normal.opts[0] = "somearg";
+        arg0.normal.opts_len = 1;
+
+        CHECK(saver_append(&jsaver, &arg0));
+
+        struct arg arg1;
+        arg1.type = arg::ARG_NORMAL;
+        arg1.normal.arg = "-another";
+        arg1.normal.opts[0] = "one";
+        arg1.normal.opts_len = 1;
+
+        CHECK(saver_append(&jsaver, &arg1));
+
+        CHECK(saver_save(&jsaver, ourtempfile.c_str()));
+        saver_deinit(&jsaver);
+
+        /* Write it the second time. */
+        CHECK(saver_init(&jsaver, "/somedir", "somefile", SFLAGS_STYLE_COMMAND));
+
+        arg0.type = arg::ARG_NORMAL;
+        arg0.normal.arg = "-test";
+        arg0.normal.opts[0] = "somearg";
+        arg0.normal.opts_len = 1;
+
+        CHECK(saver_append(&jsaver, &arg0));
+
+        arg1.type = arg::ARG_NORMAL;
+        arg1.normal.arg = "-another";
+        arg1.normal.opts[0] = "one";
+        arg1.normal.opts_len = 1;
+
+        CHECK(saver_append(&jsaver, &arg1));
+
+        CHECK(saver_save(&jsaver, ourtempfile.c_str()));
+        saver_deinit(&jsaver);
+
+        char const *expected_json = "[{\"file\": \"somefile\", \"directory\": \"/somedir\","
+                                    " \"command\": \"-test somearg -another one \"}]";
+        STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
+}
