@@ -11,7 +11,7 @@ extern "C" {
 struct plugin_name_args;
 
 #define CONFIG_FIRST_NDX (CONFIG_IGNORE_VERS)
-#define CONFIG_LAST_NDX  (CONFIG_OUTPUT)
+#define CONFIG_LAST_NDX  (CONFIG_WANT_HELP)
 #define CONFIG_COUNT     (CONFIG_LAST_NDX - CONFIG_FIRST_NDX + 1)
 
 /**
@@ -24,15 +24,21 @@ enum config_opts {
         CONFIG_FILTER_INTERNAL, /**< Filter out internal GCC flags. */
         CONFIG_COMP_REPLACE,    /**< Replace a compiler name with a specified one. */
         CONFIG_OUTPUT,          /**< Specify a location of an output file. */
+        CONFIG_WANT_HELP,       /**< Print help message. */
 };
 
 /**
  * One union to represent all possible values of options.
  * */
 union config_values {
+        /* By types. */
+        bool boolean;
+
+        /* By options. */
         bool ignore_versions;
         bool filter_specific;
         bool filter_internal;
+        bool want_help;
         struct config_compreplace {
                 enum conf_compreplace_types {
                         CONF_COMPREPLACE_TYPE_NONE,
@@ -53,8 +59,10 @@ union config_values {
  * Describes an actual option.
  * */
 struct config_opt {
-        char const *key;  /**< It's the part after -fplugin-gen_ccommands-. */
-        char const *help; /**< Help message. */
+        char const *key;         /**< It's the part after -fplugin-gen_ccommands-. */
+        char const *help;        /**< Help message. */
+        char const *help_defval; /**< String representation of the default value.
+                                  * If NULL ptr, then the default value isn't specified. */
 
         bool set;                   /**< Is it set, or shall we use a default value? */
         union config_values defval; /**< Default value. */
@@ -76,9 +84,8 @@ union config_values config_get(enum config_opts opt);
 
 /**
  * @brief Get a formatted help string.
- * @warning A returned pointer must be freed.
  * */
-char const *config_get_help_str(void);
+char const *config_get_help_str(char const *plug_name);
 
 /**
  * @brief Resets all options to their default values.

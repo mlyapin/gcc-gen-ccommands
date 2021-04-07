@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 static struct config_opt OPTS[] = {
                 [CONFIG_UNKNOWN_KEY]   = {
@@ -12,40 +14,56 @@ static struct config_opt OPTS[] = {
                                                    "Nobody breaks the law on my watch!"
                                                    "Ahem. You were not supposed to see that, beware, "
                                                    "there is a bug around these parts.",
+                                           .help_defval = "Huh?",
                                            .set = false,
                                          },
                [CONFIG_IGNORE_VERS]    = {
                                            .key = "ignore_ver",
                                            .help = "Disable version checks",
+                                           .help_defval = "false",
                                            .set = false,
                                            .defval.ignore_versions = false,
                                          },
               [CONFIG_FILTER_SPECIFIC] = {
                                            .key = "filter_internal",
                                            .help = "Filter out GCCs internal options",
+                                           .help_defval = "true",
                                            .set = false,
                                            .defval.filter_internal = true,
                                          },
               [CONFIG_FILTER_INTERNAL] = {
                                            .key = "filter_specific",
                                            .help = "Filter out GCC-only options",
+                                           .help_defval = "false",
                                            .set = false,
                                            .defval.filter_specific = false,
                                          },
               [CONFIG_COMP_REPLACE]    = {
                                            .key = "replace_comp",
-                                           .help = "Replace compiler entry with specified",
+                                           .help = "Replace compiler entry with specified. May be <NONE>,"
+                                           "which will leave compiler's name unchanged.",
+                                           .help_defval = "<NONE>",
                                            .set = false,
                                            .defval.comp_replace.type = CONF_COMPREPLACE_TYPE_NONE,
                                            .defval.comp_replace.specified = NULL,
                                          },
               [CONFIG_OUTPUT]          = {
                                            .key = "output",
-                                           .help = "Specify output file.",
+                                           .help = "Specify output file. May be <NEARINPUT>, "
+                                           "which will create a file near an input file "
+                                           "with appended .json suffix.",
+                                           .help_defval = "<NEARINPUT>",
                                            .set = false,
                                            .defval.output.type = CONF_OUT_TYPE_NEARINPUT,
                                            .defval.output.specified = NULL,
-                                         }
+                                         },
+                [CONFIG_WANT_HELP]     = {
+                                           .key = "help",
+                                           .help = "Print this help message.",
+                                           .help_defval = NULL,
+                                           .set = false,
+                                           .defval.want_help = false,
+                                         },
 };
 
 static enum config_opts find_opt_by_key(char const *key)
@@ -69,6 +87,7 @@ static void apply_val(enum config_opts opt_ndx, char const *val)
         }
 
         switch (opt_ndx) {
+        case CONFIG_WANT_HELP:
         case CONFIG_IGNORE_VERS:
         case CONFIG_FILTER_SPECIFIC:
         case CONFIG_FILTER_INTERNAL: {
@@ -91,7 +110,8 @@ static void apply_val(enum config_opts opt_ndx, char const *val)
                 }
         } break;
         case CONFIG_UNKNOWN_KEY:
-        default: assert(false);
+                /* TODO Print a message instead. */
+                assert(false);
         }
 
         opt->set = true;
@@ -129,4 +149,53 @@ void config_reset_opts(void)
                 o->set = false;
                 o->setval = o->defval;
         }
+}
+
+#define HELPBUF_SIZE (2048u)
+static char HELPBUF[HELPBUF_SIZE] = { 0 };
+static size_t HELPBUF_POS = 0;
+
+static bool helpbuf_printf(char const *format, ...)
+{
+        int written = 0;
+
+        va_list args;
+        va_start(args, format);
+
+        size_t const space_remains = HELPBUF_SIZE - HELPBUF_POS;
+
+        written = vsnprintf(&HELPBUF[HELPBUF_POS], space_remains, format, args);
+        if (written < 0) {
+                goto end;
+        }
+        HELPBUF_POS += written;
+
+        if (HELPBUF_POS >= HELPBUF_SIZE) {
+                assert(HELPBUF_POS < HELPBUF_SIZE);
+                goto end;
+        }
+
+end:
+        va_end(args);
+        return (written >= 0);
+}
+
+char const *config_get_help_str(char const *plug_name)
+{
+        for (size_t i = CONFIG_FIRST_NDX; i <= CONFIG_LAST_NDX; i++) {
+                struct config_opt *o = &OPTS[i];
+
+                if (!helpbuf_printf("-fplugin-arg-%s-%s\n\tDescription: %s\n", plug_name, o->key,
+                                    o->help)) {
+                        return (NULL);
+                }
+
+                if (NULL != o->help_defval) {
+                        if (!helpbuf_printf("\tDefault value: %s\n", o->help_defval)) {
+                                return (NULL);
+                        }
+                }
+        }
+
+        return (HELPBUF);
 }

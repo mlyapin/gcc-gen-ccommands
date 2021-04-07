@@ -22,19 +22,21 @@ int plugin_is_GPL_compatible;
 
 static char const *get_input_filename(void)
 {
-        assert(num_in_fnames >= 1);
-        char const *input_filename = in_fnames[0];
-        return (input_filename);
+        if (num_in_fnames < 1) {
+                return (NULL);
+        } else {
+                return (in_fnames[0]);
+        }
 }
 
-static char const *get_output_filename(void)
+static char const *get_output_filename(char const *input_filename)
 {
         struct config_values::config_output out = config_get(CONFIG_OUTPUT).output;
         if (out.type == config_values::config_output::CONF_OUT_TYPE_SPECIFIED) {
                 return (out.specified);
         } else if (out.type == config_values::config_output::CONF_OUT_TYPE_NEARINPUT) {
                 char const *suffix = ".json";
-                char const *ifname = get_input_filename();
+                char const *ifname = input_filename;
 
                 size_t const input_len = strlen(ifname);
                 size_t const result_len = strlen(suffix) + input_len + 1;
@@ -101,7 +103,7 @@ static void deconstruct_chain(struct changer_chain *cc)
         changer_chain_deinit(cc);
 }
 
-static bool dowork(void)
+static bool process_file(char const *input_fname)
 {
         struct changer_chain cchain;
         struct saver saver;
@@ -110,7 +112,7 @@ static bool dowork(void)
                 goto err;
         }
 
-        if (!saver_init(&saver, get_directory(), get_input_filename(), SFLAGS_NONE)) {
+        if (!saver_init(&saver, get_directory(), input_fname, SFLAGS_NONE)) {
                 goto err_dchain;
         }
 
@@ -125,7 +127,7 @@ static bool dowork(void)
                 }
         }
 
-        if (!saver_save(&saver, get_output_filename())) {
+        if (!saver_save(&saver, get_output_filename(input_fname))) {
                 goto err_dsaver;
         }
 
@@ -144,6 +146,8 @@ err:
 
 #define PLUGIN_ARG(KEY) "-fplugin-arg-gen-ccommands-" KEY
 
+static struct plugin_info helpver_info = {.version = "0.0.1", .help = "Huh?"};
+
 int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *version)
 {
         for (size_t i = 0; i < info->argc; i++) {
@@ -155,6 +159,14 @@ int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *versio
                         return (EXIT_FAILURE);
                 }
         }
+
+        if (config_get(CONFIG_WANT_HELP).want_help) {
+                puts(config_get_help_str(info->base_name));
+                return (EXIT_SUCCESS);
+        }
+
+        helpver_info.help = config_get_help_str(info->base_name);
+        register_callback(info->base_name, PLUGIN_INFO, NULL, &helpver_info);
 
         bool ignore_vers = config_get(CONFIG_IGNORE_VERS).ignore_versions;
         if (!ignore_vers && !plugin_default_version_check(version, &gcc_version)) {
@@ -178,8 +190,11 @@ int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *versio
                 return (EXIT_FAILURE);
         }
 
-        if (!dowork()) {
-                return (EXIT_FAILURE);
+        const char *input_fname = get_input_filename();
+        if (NULL != input_fname) {
+                if (!process_file(input_fname)) {
+                        return (EXIT_FAILURE);
+                }
         }
 
         return (EXIT_SUCCESS);
