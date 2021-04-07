@@ -7,7 +7,7 @@ extern "C" {
 
 #define unused __attribute__((unused))
 #define restrict __restrict__
-#define ARRAY_SIZE(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+#define ARRSIZE(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
 #ifdef __cplusplus
 }

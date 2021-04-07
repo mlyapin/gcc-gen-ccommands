@@ -134,9 +134,9 @@ TEST(test_changers, filterout_gccinternal)
 
 TEST(test_changers, filterout_gccspecific_match)
 {
-        char const *flags[] = {"-fplugin", "-fplugin-arg-something-something"};
+        char const *flags[] = { "-fplugin", "-fplugin-arg-something-something" };
 
-        for (size_t i = 0; i < ARRAY_SIZE(flags); i++) {
+        for (size_t i = 0; i < ARRSIZE(flags); i++) {
                 struct arg a;
                 a.type = arg::ARG_NORMAL;
                 a.normal.arg = flags[i];

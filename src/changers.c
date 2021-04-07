@@ -116,8 +116,7 @@ bool changer_drop_internal(struct arg *arg, struct changer *f unused)
         if (arg->type != ARG_NORMAL) {
                 return (true);
         }
-        return (!opts_contains_arg(ARRAY_SIZE(GCC_INTERNAL_OPTS), GCC_INTERNAL_OPTS,
-                                   arg->normal.arg));
+        return (!opts_contains_arg(ARRSIZE(GCC_INTERNAL_OPTS), GCC_INTERNAL_OPTS, arg->normal.arg));
 }
 
 bool changer_drop_gccspecific(struct arg *arg, struct changer *f unused)
@@ -127,6 +126,5 @@ bool changer_drop_gccspecific(struct arg *arg, struct changer *f unused)
                 return (true);
         }
 
-        return (!opts_contains_arg(ARRAY_SIZE(GCC_SPECIFIC_OPTS), GCC_SPECIFIC_OPTS,
-                                   arg->normal.arg));
+        return (!opts_contains_arg(ARRSIZE(GCC_SPECIFIC_OPTS), GCC_SPECIFIC_OPTS, arg->normal.arg));
 }
