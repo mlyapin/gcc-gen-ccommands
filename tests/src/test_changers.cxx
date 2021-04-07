@@ -152,4 +152,3 @@ TEST(test_changers, dont_filterout_valid)
         CHECK(changer_drop_gccspecific(&a, nullptr));
         CHECK(changer_drop_internal(&a, nullptr));
 }
-

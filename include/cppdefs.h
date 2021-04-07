@@ -7,6 +7,9 @@ extern "C" {
 
 #define unused __attribute__((unused))
 #define restrict __restrict__
+
+#define constfn __attribute__((const))
+
 #define ARRSIZE(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
 #ifdef __cplusplus

@@ -110,6 +110,7 @@ static void apply_val(enum config_opts opt_ndx, char const *val)
                 }
         } break;
         case CONFIG_UNKNOWN_KEY:
+        default:
                 /* TODO Print a message instead. */
                 assert(false);
         }
@@ -155,6 +156,8 @@ void config_reset_opts(void)
 static char HELPBUF[HELPBUF_SIZE] = { 0 };
 static size_t HELPBUF_POS = 0;
 
+
+__attribute__((format (printf, 1, 2)))
 static bool helpbuf_printf(char const *format, ...)
 {
         int written = 0;
@@ -168,7 +171,7 @@ static bool helpbuf_printf(char const *format, ...)
         if (written < 0) {
                 goto end;
         }
-        HELPBUF_POS += written;
+        HELPBUF_POS += (size_t)written;
 
         if (HELPBUF_POS >= HELPBUF_SIZE) {
                 assert(HELPBUF_POS < HELPBUF_SIZE);

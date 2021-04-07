@@ -21,6 +21,7 @@ TEST_GROUP(test_config)
 TEST(test_config, there_are_defaults)
 {
         auto result = config_get(CONFIG_IGNORE_VERS).ignore_versions;
+        CHECK_FALSE(result);
 }
 
 TEST(test_config, can_apply_arg)

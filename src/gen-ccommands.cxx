@@ -90,7 +90,6 @@ static bool construct_chain(struct changer_chain *cc)
 
 err_deinit:
         changer_chain_deinit(cc);
-err:
         return (false);
 }
 
@@ -146,7 +145,9 @@ static struct plugin_info helpver_info = {.version = "0.0.1", .help = "Huh?"};
 
 int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *version)
 {
-        for (size_t i = 0; i < info->argc; i++) {
+        assert(0 < info->argc);
+
+        for (size_t i = 0; i < (size_t)info->argc; i++) {
                 struct plugin_argument *argv = &info->argv[i];
 
                 enum config_opts o = config_apply_arg(argv->key, argv->value);
