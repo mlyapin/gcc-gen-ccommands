@@ -61,7 +61,16 @@ COMMON_FLAGS += -Wall \
 ifeq ($(findstring 1,$(NDEBUG)),1)
     COMMON_FLAGS += -O3 -flto
 else
-    COMMON_FLAGS += -O0 -g
+# TODO Address sanitizer.
+# Error: "Interceptors are not working.
+# This may be because AddressSanitizer is loaded too late (e.g. via dlopen). "
+    COMMON_FLAGS += -O0 -g \
+					-fsanitize=leak \
+					-fsanitize=undefined \
+					-fsanitize=shift \
+					-fsanitize=bounds \
+					-fsanitize-address-use-after-scope \
+					-fno-omit-frame-pointer
 endif
 
 
