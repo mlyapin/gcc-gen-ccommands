@@ -1,11 +1,8 @@
-#include <gcc-plugin.h>
-
-#include <opts.h>
-#include <toplev.h>
-
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
+
+#include "gcc_headers.hxx"
 
 #include "arg.h"
 

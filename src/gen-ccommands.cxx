@@ -1,15 +1,11 @@
-#include <jansson.h>
-
-#include <gcc-plugin.h>
-#include <plugin-version.h>
-#include <opts.h>
-#include <toplev.h>
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <jansson.h>
+
+#include "gcc_headers.hxx"
 
 #include "arg.h"
 #include "changers.h"
