@@ -15,7 +15,7 @@ BUILDDIR := $(CURDIR)/build
 BUILDDIR_TESTS := $(BUILDDIR)/tests_objs
 BUILDDIR_PLUGIN := $(BUILDDIR)/plugin_objs
 BUILDDIR_DEPS := $(BUILDDIR)/deps
-DESTDIR ?= $(BUILDDIR)/installed
+DESTDIR ?= $(GCCPLUGINS_DIR)
 
 SOURCES := $(shell $(FIND) src -name '*.c' -or -name '*.cxx')
 
@@ -93,6 +93,8 @@ else
     PLUGIN_CXXFLAGS += -shared
 endif
 
+PLUGIN_FILENAME ?= gen_ccommands.so
+
 # Specific for UnitTesting.
 
 ## CppUTest
@@ -104,6 +106,23 @@ TESTS_CPPFLAGS += -I$(DEPSDIR)/cpputest/include $(CPPUTEST_CPPFLAGS)
 
 TESTS_SOURCES := $(shell $(FIND) tests -name '*.c' -or -name '*.cxx')
 
+# Gen CCommands
+CCMD_PLUGIN_PATH ?= $(GCCPLUGINS_DIR)/$(PLUGIN_FILENAME)
+ifeq ($(findstring $(CCMD_PLUGIN_PATH),$(wildcard $(CCMD_PLUGIN_PATH))), \
+      $(CCMD_PLUGIN_PATH))
+    GEN_CCMDS ?= 1
+endif
+
+$(error, $(PLUGIN_FILENAME))
+ifeq ($(findstring 1,$(GEN_CCMDS)), 1)
+    CCMD_FLAGS = -fplugin=$(CCMD_PLUGIN_PATH) \
+                  -fplugin-arg-gen_ccommands-filter_specific \
+                  -fplugin-arg-gen_ccommands-filter_internal \
+                  -fplugin-arg-gen_ccommands-output=$(@:.o=.json)
+    CCMD_FLAGS_CC := -fplugin-arg-gen_ccommands-replace_comp="gcc"
+    CCMD_FLAGS_CXX := -fplugin-arg-gen_ccommands-replace_comp="g++"
+endif
+
 # Obj files
 
 PLUGIN_OBJS := $(addprefix $(BUILDDIR_PLUGIN)/, $(addsuffix .o,$(basename $(SOURCES))))
@@ -114,30 +133,34 @@ TESTS_OBJS := $(addprefix $(BUILDDIR_TESTS)/, $(addsuffix .o,$(basename $(TESTS_
 
 all: plugin tests
 
-plugin: $(BUILDDIR)/gen_ccommands.so
+plugin: $(BUILDDIR)/$(PLUGIN_FILENAME)
 
 tests: $(BUILDDIR)/tests
 
-install: $(BUILDDIR)/gen_ccommands.so
+install: $(BUILDDIR)/$(PLUGIN_FILENAME)
 	@$(MKDIRP) $(DESTDIR)
-	@cp $< $(DESTDIR)/gen_ccommands.so
+	@cp $< $(DESTDIR)/$(PLUGIN_FILENAME)
 
 clean:
 	@$(RMRF) $(BUILDDIR)
 
 deps: $(BUILDDIR_DEPS)/cpputest
 
-$(BUILDDIR)/gen_ccommands.so: $(PLUGIN_OBJS)
+$(BUILDDIR)/$(PLUGIN_FILENAME): $(PLUGIN_OBJS)
 	@$(MKDIRP) $(dir $@)
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CXXFLAGS) $(PLUGIN_LDFLAGS) $^ -o $@
 
 $(BUILDDIR_PLUGIN)/%.o: %.c
 	@$(MKDIRP) $(dir $@)
-	@$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $< -o $@
+	@$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CFLAGS) $< -o $@ \
+			$(CCMD_FLAGS) \
+			$(CCMD_FLAGS_CC)
 
 $(BUILDDIR_PLUGIN)/%.o: %.cxx
 	@$(MKDIRP) $(dir $@)
-	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CXXFLAGS) $< -o $@
+	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(PLUGIN_CPPFLAGS) $(PLUGIN_CXXFLAGS) $< -o $@ \
+			$(CCMD_FLAGS) \
+			$(CCMD_FLAGS_CXX)
 
 $(BUILDDIR)/tests: $(TESTS_OBJS) $(BUILDDIR_DEPS)/cpputest
 	@$(MKDIRP) $(dir $@)
@@ -152,11 +175,15 @@ $(BUILDDIR_DEPS)/cpputest:
 
 $(BUILDDIR_TESTS)/%.o: %.c
 	@$(MKDIRP) $(dir $@)
-	@$(CC) -c $(CPPFLAGS) $(CFLAGS) $(TESTS_CPPFLAGS) $(TESTS_CFLAGS) $< -o $@
+	@$(CC) -c $(CPPFLAGS) $(CFLAGS) $(TESTS_CPPFLAGS) $(TESTS_CFLAGS) $< -o $@ \
+			$(CCMD_FLAGS) \
+			$(CCMD_FLAGS_CC)
 
 $(BUILDDIR_TESTS)/%.o: %.cxx
 	@$(MKDIRP) $(dir $@)
-	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(TESTS_CPPFLAGS) $(TESTS_CXXFLAGS) $< -o $@
+	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(TESTS_CPPFLAGS) $(TESTS_CXXFLAGS) $< -o $@ \
+			$(CCMD_FLAGS) \
+			$(CCMD_FLAGS_CXX)
 
 # Dependency files
 
