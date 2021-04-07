@@ -141,7 +141,7 @@ err:
 
 #define PLUGIN_ARG(KEY) "-fplugin-arg-gen_ccommands-" KEY
 
-static struct plugin_info helpver_info = {.version = "0.0.1", .help = "Huh?"};
+static struct plugin_info helpver_info = {.version = "0.1.0", .help = "Huh?"};
 
 int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *version)
 {
