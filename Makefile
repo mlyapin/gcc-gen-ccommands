@@ -23,23 +23,63 @@ CPPFLAGS += -I$(GCCPLUGINS_DIR)/include \
             -I$(CURDIR)/include \
             -I$(CURDIR)/tests
 
-CFLAGS += -fpic
+COMMON_FLAGS := -fshort-enums \
+                -funsafe-loop-optimizations \
+                -fstrict-aliasing \
+                -fipa-pure-const \
+                -fpic
+
+# Warnings
+COMMON_FLAGS += -Wall \
+                -Wextra \
+                -Wformat=2 \
+                -Wformat-overflow=2 \
+                -Wshift-overflow=2 \
+                -Wduplicated-branches \
+                -Wshadow \
+                -Wduplicated-cond \
+                -Wswitch-default \
+                -Wmaybe-uninitialized \
+                -Wunsafe-loop-optimizations \
+                -Wcast-qual \
+                -Wcast-align=strict \
+                -Wconversion \
+                -Wdangling-else \
+                -Wlogical-op \
+                -Wmissing-field-initializers \
+                -Winline \
+                -Wdisabled-optimization \
+                -Wstrict-aliasing=3 \
+                -Wsuggest-attribute=const \
+                -Wsuggest-attribute=noreturn \
+                -Wsuggest-attribute=malloc \
+                -Wsuggest-attribute=format \
+                -fanalyzer \
+                -fanalyzer-transitivity \
+                -fanalyzer-checker=taint
+
 ifeq ($(findstring 1,$(NDEBUG)),1)
-    CFLAGS += -O3 -flto
+    COMMON_FLAGS += -O3 -flto
 else
-    CFLAGS += -O0 -g
+    COMMON_FLAGS += -O0 -g
 endif
+
 
 ## GMP is required by gcc.
 CPPFLAGS += $(shell $(PKG_CONFIG) --cflags-only-I gmp)
 
 ## Jansson for manipulating compile_commands.json
 CPPFLAGS += $(shell $(PKG_CONFIG) --cflags-only-I jansson)
-CFLAGS += $(shell $(PKG_CONFIG) --cflags-only-other jansson)
+COMMON_FLAGS += $(shell $(PKG_CONFIG) --cflags-only-other jansson)
 LDFLAGS += $(shell $(PKG_CONFIG) --libs jansson)
 
 ## Same flags for C and C++.
-CXXFLAGS += $(CFLAGS) -std=c++17
+CFLAGS += $(COMMON_FLAGS) \
+          -std=gnu18 \
+          -Wstrict-prototypes \
+          -Wmissing-prototypes
+
+CXXFLAGS += $(COMMON_FLAGS) -std=c++17
 
 # Plugin specific
 
