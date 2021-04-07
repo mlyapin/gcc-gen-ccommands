@@ -212,26 +212,41 @@ bool saver_save(struct saver *saver, char const *out_path)
         if (saver->flags & SFLAGS_STYLE_COMMAND) {
                 json_t *jstr = json_string(saver->cmds);
                 if (NULL == jstr) {
-                        return (false);
+                        goto err;
                 }
 
                 json_object_set_new(saver->out_obj, "command", jstr);
         }
 
+        json_t *array = json_array();
+        if (NULL == array) {
+                goto err;
+        }
+
+        if (0 != json_array_append(array, saver->out_obj)) {
+                goto err_free_array;
+        }
+
         /* Always create the file anew. */
         FILE *f = fopen(out_path, "w+");
         if (NULL == f) {
-                return (false);
+                goto err_free_array;
         }
 
-        bool successful = true;
-
-        if (0 != json_dumpf(saver->out_obj, f, 0)) {
-                successful = false;
+        if (0 != json_dumpf(array, f, 0)) {
+                goto err_close_file;
         }
+
         fclose(f);
+        json_decref(array);
+        return (true);
 
-        return (successful);
+err_close_file:
+        fclose(f);
+err_free_array:
+        json_decref(array);
+err:
+        return (false);
 }
 
 char const *saver_get_last_err(struct saver *saver)

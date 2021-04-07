@@ -45,7 +45,7 @@ TEST(test_saver, simple)
         saver_deinit(&jsaver);
 
         char const *expected_json =
-                "{\"file\": \"somefile\", \"directory\": \"/somedir\", \"arguments\": []}";
+                "[{\"file\": \"somefile\", \"directory\": \"/somedir\", \"arguments\": []}]";
         STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
 }
 
@@ -74,8 +74,8 @@ TEST(test_saver, style_arguments)
         saver_deinit(&jsaver);
 
         char const *expected_json =
-                "{\"file\": \"somefile\", \"directory\": \"/somedir\","
-                " \"arguments\": [\"-test\", \"somearg\", \"-another\", \"one\"]}";
+                "[{\"file\": \"somefile\", \"directory\": \"/somedir\","
+                " \"arguments\": [\"-test\", \"somearg\", \"-another\", \"one\"]}]";
         STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
 }
 
@@ -103,7 +103,7 @@ TEST(test_saver, style_command)
         CHECK(saver_save(&jsaver, ourtempfile.c_str()));
         saver_deinit(&jsaver);
 
-        char const *expected_json = "{\"file\": \"somefile\", \"directory\": \"/somedir\","
-                                    " \"command\": \"-test somearg -another one \"}";
+        char const *expected_json = "[{\"file\": \"somefile\", \"directory\": \"/somedir\","
+                                    " \"command\": \"-test somearg -another one \"}]";
         STRCMP_EQUAL(expected_json, get_tempfile_contents().c_str());
 }
