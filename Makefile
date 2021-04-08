@@ -65,12 +65,12 @@ else
 # Error: "Interceptors are not working.
 # This may be because AddressSanitizer is loaded too late (e.g. via dlopen). "
     COMMON_FLAGS += -O0 -g \
-					-fsanitize=leak \
-					-fsanitize=undefined \
-					-fsanitize=shift \
-					-fsanitize=bounds \
-					-fsanitize-address-use-after-scope \
-					-fno-omit-frame-pointer
+                    -fsanitize=leak \
+                    -fsanitize=undefined \
+                    -fsanitize=shift \
+                    -fsanitize=bounds \
+                    -fsanitize-address-use-after-scope \
+                    -fno-omit-frame-pointer
 endif
 
 
@@ -125,9 +125,9 @@ endif
 $(error, $(PLUGIN_FILENAME))
 ifeq ($(findstring 1,$(GEN_CCMDS)), 1)
     CCMD_FLAGS = -fplugin=$(CCMD_PLUGIN_PATH) \
-                  -fplugin-arg-gen_ccommands-filter_specific \
-                  -fplugin-arg-gen_ccommands-filter_internal \
-                  -fplugin-arg-gen_ccommands-output=$(@:.o=.json)
+                 -fplugin-arg-gen_ccommands-filter_specific \
+                 -fplugin-arg-gen_ccommands-filter_internal \
+                 -fplugin-arg-gen_ccommands-output=$(@:.o=.json)
     CCMD_FLAGS_CC := -fplugin-arg-gen_ccommands-replace_comp="gcc"
     CCMD_FLAGS_CXX := -fplugin-arg-gen_ccommands-replace_comp="g++"
 endif

@@ -141,7 +141,7 @@ err:
 
 #define PLUGIN_ARG(KEY) "-fplugin-arg-gen_ccommands-" KEY
 
-static struct plugin_info helpver_info = {.version = "0.1.0", .help = "Huh?"};
+static struct plugin_info helpver_info = { .version = "0.1.0", .help = "Huh?" };
 
 int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *version)
 {
@@ -168,11 +168,25 @@ int plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *versio
         bool ignore_vers = config_get(CONFIG_IGNORE_VERS).ignore_versions;
         if (!ignore_vers && !plugin_default_version_check(version, &gcc_version)) {
                 fprintf(stderr,
-                        "Incompatible GCC version.\n"
-                        "The gen-ccommands plugin was compiled for GCC %s.\n"
-                        "If you still want to continue, then append the" PLUGIN_ARG(
+                        "gen_ccomannds.so: Incompatible GCC version.\n"
+                        "Runtime version:\n"
+                        "\tVersion: %s\n"
+                        "\tDatestamp: %s\n"
+                        "\tDevPhase: %s\n"
+                        "\tRevision: %s\n"
+                        "\tConfiguration: %s\n\n"
+                        "But compiled for:\n"
+                        "\tVersion: %s\n"
+                        "\tDatestamp: %s\n"
+                        "\tDevPhase: %s\n"
+                        "\tRevision: %s\n"
+                        "\tConfiguration: %s\n\n"
+                        "If you still want to continue, then append the " PLUGIN_ARG(
                                 "ignore_vers") " argument to the invocation of gcc.\n",
-                        basever);
+                        version->basever, version->datestamp, version->devphase, version->revision,
+                        version->configuration_arguments, gcc_version.basever,
+                        gcc_version.datestamp, gcc_version.devphase, gcc_version.revision,
+                        gcc_version.configuration_arguments);
                 return (EXIT_FAILURE);
         }
 
