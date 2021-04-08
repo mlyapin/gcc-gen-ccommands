@@ -1,0 +1,84 @@
+A GCC plugin that outputs compiler arguments in the [[https://clang.llvm.org/docs/JSONCompilationDatabase.html][JSON Compilation Database Format]].
+
+It tries to emulate what the ~-MJ~ argument does on clang.
+At this point it's usable, but there is a vast space for improvements.
+
+Actually, there are already good tools that do the same thing better and easier:
+- [[https://github.com/rizsotto/Bear][Bear]]
+- [[https://github.com/nickdiego/compiledb][Compiledb]]
+- [[https://github.com/rizsotto/scan-build][scan-build]]
+
+If one of those works fine for you, then it would be better for you to keep using it.
+
+#+begin_quote
+Why bother then?
+#+end_quote
+
+/For fun, of course/. Ahem.
+
+I have the following problems with Bear:
+ - It tends to break (outputs empty compile_commands.json) on projects with overly complex build systems (FreeBSD, for example).
+ - It's noticeably slow on big projects (again, FreeBSD (especially when you're doing ~make buildworld~)).
+ - There is the need sometimes to preprocess the output.
+
+So the goal of this project is to try to solve these problems... someday.
+
+* Build
+** Requirements
+
+- ~TARGET_GCC~ target compiler that will use the plugin.
+- ~CC~ compiler to compile the plugin.
+- ~CXX~ compiler to compile the plugin.
+- ~pkg-config~ to find the dependencies.
+- ~GMP~ library. GCC requires it.
+- [[https://github.com/akheron/jansson][jansson]] library to work with json.
+
+And you probably would want to install some tool that will merge all of the json outputs into a single file.
+There is [[https://stedolan.github.io/jq/][jq]] for example:
+
+#+begin_src shell
+$ jq -s add $(find build -name '*.json' | tr '\n' ' ') > compile_commands.json
+#+end_src
+
+** Instructions
+
+#+begin_src shell
+$ make NDEBUG=1 CXX=g++-10 CC=gcc-10 TARGET_GCC=i686-elf-gcc all
+#+end_src
+
+The library will be saved as ~./build/gen_ccommands.so~.
+
+* How to use
+
+** Simple example
+
+#+begin_src shell
+$ echo "#include <stdio.h>\n int main(void) { puts(\"hi\"); return (0); }" > /tmp/gccmds_test.c
+$ i686-elf-gcc -fplugin=./build/gen_ccommands.so -o /dev/null -I/usr/local/include -O3 /tmp/gccmds_test.c
+$ cat /tmp/gccmds_test.c.json
+[{"file": "/tmp/gccmds_test.c", "directory": "/Volumes/Development/my/gcc-gen-ccommands", "arguments": ["/usr/local/Cellar/i686-elf-gcc/10.2.0/libexec/gcc/i686-elf/10.2.0/cc1", "-quiet", "-I", "/usr/local/include", "/tmp/gccmds_test.c", "-quiet", "-dumpbase", "gccmds_test.c", "-mtune=generic", "-march=pentiumpro", "-auxbase", "gccmds_test", "-O3", "-o", "/var/folders/fc/t60701753t17tvnypnghrmxr0000gn/T//cclHYbGV.s"]}]
+#+end_src
+
+** A bit more complex example
+
+This project itself uses... itself?
+You can take a look into ~Makefile~ if you're brave enough:
+
+#+begin_src shell
+$ grep --context=2 "CCMD" Makefile
+#+end_src
+
+* Arguments
+
+To pass arguments to the plugin, append to GCC invocation flags in this format: ~-fplugin-arg-gen_ccommands-<key>=<value>~.
+
+For now there are this arguments:
+
+| Argument        | Default value | Meaning                                                                                   |
+|-----------------+---------------+-------------------------------------------------------------------------------------------|
+| ignore_ver      | ~false~       | Disable version checks at the start.                                                      |
+| filter_internal | ~true~        | Filter out known GCC's internal options.                                                  |
+| filter_specific | ~false~       | Filter out known GCC-specific options.                                                    |
+| replace_comp    | "<NONE>"      | Replace the compiler with a specified string. Maybe "<NONE>" that won't replace anything. |
+| output          | "<NEARINPUT>" | Output file. Maybe "<NEARINPUT>" that will place the output file near the input file.     |
+| help            | --            | Prints help message.                                                                      |
